@@ -2,13 +2,15 @@
   "name": "excel_manage",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "electron/main.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "electron:dev": "set NODE_ENV=development && vite build && electron .",
+    "electron:build": "vite build && electron-builder",
     "test": "vitest run",
     "test:watch": "vitest"
   },
