@@ -1,32 +1,31 @@
 @echo off
-chcp 65001 >nul
-title 跨表匹配工具 - 关闭
+title KuaBiaoPiPei - Stop
 
 echo ============================================
-echo   跨表匹配工具 - 关闭
+echo   Close App
 echo ============================================
 echo.
 
-echo 正在关闭 Electron 应用...
+echo Stopping Electron...
 taskkill /f /im electron.exe >nul 2>&1
 if %errorlevel% equ 0 (
-    echo Electron 进程已关闭
+    echo Electron stopped
 ) else (
-    echo 没有正在运行的 Electron 进程
+    echo No Electron process found
 )
 
 echo.
-echo 正在关闭 Node.js 进程...
+echo Stopping Node.js...
 taskkill /f /im node.exe >nul 2>&1
 if %errorlevel% equ 0 (
-    echo Node.js 进程已关闭
+    echo Node.js stopped
 ) else (
-    echo 没有正在运行的 Node.js 进程
+    echo No Node.js process found
 )
 
 echo.
 echo ============================================
-echo   所有进程已关闭
+echo   All stopped
 echo ============================================
 
 timeout /t 2 >nul

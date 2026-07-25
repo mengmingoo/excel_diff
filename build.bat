@@ -1,52 +1,63 @@
 @echo off
-chcp 65001 >nul
-title 跨表匹配工具 - 打包中...
+title KuaBiaoPiPei - Build
 
 echo ============================================
-echo   跨表匹配工具 - 打包
+echo   Build App
 echo ============================================
 echo.
 
 cd /d "%~dp0"
 
-echo [1/3] 检查依赖...
-if not exist "node_modules" (
-    echo 依赖未安装，正在安装（使用国内源）...
-    call npm install --registry=https://registry.npmmirror.com
-    if errorlevel 1 (
-        echo 依赖安装失败，请检查网络连接
-        pause
-        exit /b 1
-    )
-    echo 依赖安装完成
-) else (
-    echo 依赖已就绪
-)
-
-echo.
-echo [2/3] 构建前端...
-call npm run build
+echo [0/3] Check Node.js...
+where node >nul 2>&1
 if errorlevel 1 (
-    echo 前端构建失败
+    echo [ERROR] Node.js not found. Please install Node.js first.
+    echo Download: https://nodejs.org/
     pause
     exit /b 1
 )
-echo 前端构建完成
+echo Node.js OK
 
 echo.
-echo [3/3] 打包 Electron 应用（使用国内源）...
+echo [1/3] Check dependencies...
+if not exist "node_modules" (
+    echo Installing dependencies (CN mirror)...
+    call npm install --registry=https://registry.npmmirror.com
+    if errorlevel 1 (
+        echo [ERROR] npm install failed.
+        pause
+        exit /b 1
+    )
+    echo Dependencies installed
+) else (
+    echo Dependencies OK
+)
+
+echo.
+echo [2/3] Build frontend...
+call npm run build
+if errorlevel 1 (
+    echo [ERROR] Build failed.
+    pause
+    exit /b 1
+)
+echo Build OK
+
+echo.
+echo [3/3] Package Electron app (CN mirror)...
+echo This may take several minutes...
 set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 call npm run electron:build
 if errorlevel 1 (
-    echo 打包失败
+    echo [ERROR] Package failed.
     pause
     exit /b 1
 )
 
 echo.
 echo ============================================
-echo   打包完成！
-echo   输出目录: release\
+echo   Build complete!
+echo   Output: release\
 echo ============================================
 
 pause
