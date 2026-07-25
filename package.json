@@ -14,6 +14,27 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "build": {
+    "appId": "com.excelmanage.crossmatch",
+    "productName": "跨表匹配工具",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility"
+    }
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
