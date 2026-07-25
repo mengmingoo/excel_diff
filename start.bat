@@ -11,8 +11,8 @@ cd /d "%~dp0"
 
 echo [1/3] 检查依赖...
 if not exist "node_modules" (
-    echo 依赖未安装，正在安装...
-    call npm install
+    echo 依赖未安装，正在安装（使用国内源）...
+    call npm install --registry=https://registry.npmmirror.com
     if errorlevel 1 (
         echo 依赖安装失败，请检查网络连接
         pause
@@ -37,6 +37,7 @@ echo [3/3] 启动 Electron 应用...
 echo 请勿关闭此窗口，关闭此窗口将停止应用
 echo ============================================
 set NODE_ENV=development
+set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 npx electron .
 echo.
 echo 应用已关闭

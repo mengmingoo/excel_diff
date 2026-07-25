@@ -11,8 +11,8 @@ cd /d "%~dp0"
 
 echo [1/3] 检查依赖...
 if not exist "node_modules" (
-    echo 依赖未安装，正在安装...
-    call npm install
+    echo 依赖未安装，正在安装（使用国内源）...
+    call npm install --registry=https://registry.npmmirror.com
     if errorlevel 1 (
         echo 依赖安装失败，请检查网络连接
         pause
@@ -34,7 +34,8 @@ if errorlevel 1 (
 echo 前端构建完成
 
 echo.
-echo [3/3] 打包 Electron 应用...
+echo [3/3] 打包 Electron 应用（使用国内源）...
+set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 call npm run electron:build
 if errorlevel 1 (
     echo 打包失败
