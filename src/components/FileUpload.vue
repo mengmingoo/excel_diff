@@ -3,6 +3,7 @@
     <div class="upload-item" v-for="item in uploadItems" :key="item.type">
       <div class="upload-label">{{ item.label }}</div>
       <el-upload
+        :ref="(el) => setUploadRef(el, item.type)"
         class="upload-box"
         drag
         :auto-upload="false"
@@ -66,6 +67,13 @@ const uploadItems = reactive([
   { type: 'main', label: '主表', fileName: '', loading: false, progress: 0 },
   { type: 'cross', label: '跨表', fileName: '', loading: false, progress: 0 }
 ])
+
+// 存储 el-upload 组件引用，用于清除内部文件列表
+const uploadRefs = {}
+
+function setUploadRef(el, type) {
+  uploadRefs[type] = el
+}
 
 function getItem(type) {
   return uploadItems.find(i => i.type === type)
@@ -140,6 +148,10 @@ function clearFile(type) {
   item.fileName = ''
   item.loading = false
   item.progress = 0
+  // 清除 el-upload 内部文件列表，否则 limit=1 会阻止重新上传
+  if (uploadRefs[type]) {
+    uploadRefs[type].clearFiles()
+  }
 }
 </script>
 
