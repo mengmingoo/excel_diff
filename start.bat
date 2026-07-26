@@ -1,5 +1,7 @@
 @echo off
+chcp 65001 >nul
 title KuaBiaoPiPei - QiDong
+setlocal enabledelayedexpansion
 
 echo ============================================
 echo   KuaBiaoPiPei - QiDong
@@ -8,68 +10,54 @@ echo.
 
 cd /d "%~dp0"
 
-echo [0/4] Check Node.js...
+echo [0/4] JianCha Node.js...
 where node >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Node.js not found. Please install Node.js first.
-    echo Download: https://nodejs.org/
-    pause
-    exit /b 1
+    echo [CUOWU] WeiZhaoDao Node.js, QingXianAnZhuang Node.js
+    echo XiaZai: https://nodejs.org/
+    goto :end
 )
 echo Node.js OK
 
 echo.
-echo [1/4] Check dependencies...
-if not exist "node_modules" (
-    echo Installing dependencies (CN mirror)...
-    call npm install --registry=https://registry.npmmirror.com
-    if errorlevel 1 (
-        echo [ERROR] npm install failed.
-        pause
-        exit /b 1
-    )
-    echo Dependencies installed
-) else (
-    echo Dependencies OK
-)
+echo [1/4] JianCha YiLai...
+if not exist "node_modules" goto :install_deps
+echo YiLai OK
+goto :skip_install
 
+:install_deps
+echo AnZhuang YiLai (GuoNeiYuan)...
+call npm install --registry=https://registry.npmmirror.com
+if errorlevel 1 (
+    echo [CUOWU] npm install ShiBai
+    goto :end
+)
+echo YiLai AnZhuang WanCheng
+
+:skip_install
 echo.
-echo [2/4] Build frontend...
+echo [2/4] GouJian QianDuan...
 call npm run build
 if errorlevel 1 (
-    echo [ERROR] Build failed.
-    pause
-    exit /b 1
+    echo [CUOWU] GouJian ShiBai
+    goto :end
 )
-echo Build OK
+echo GouJian OK
 
 echo.
-echo [3/4] Check Electron...
-set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-call npx electron --version >nul 2>&1
-if errorlevel 1 (
-    echo Downloading Electron (first time ~100MB, please wait)...
-    call npx install-electron
-    if errorlevel 1 (
-        echo [ERROR] Electron download failed.
-        pause
-        exit /b 1
-    )
-    echo Electron installed
-) else (
-    echo Electron OK
-)
-
-echo.
-echo [4/4] Launch Electron app...
-echo DO NOT close this window while app is running
+echo [3/4] QiDong Electron...
+echo QingWuGuanBi CiChuangKou
 echo ============================================
-set NODE_ENV=development
+set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 call npx electron .
 if errorlevel 1 (
     echo.
-    echo [ERROR] App launch failed, error code: %errorlevel%
+    echo [CUOWU] Electron QiDong ShiBai, CuoWuMa: !errorlevel!
 )
+
 echo.
-echo App closed
+echo YingYong YiGuanBi
+
+:end
+echo.
 pause

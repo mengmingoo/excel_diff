@@ -1,32 +1,34 @@
 @echo off
-title KuaBiaoPiPei - Stop
+chcp 65001 >nul
+title KuaBiaoPiPei - GuanBi
 
 echo ============================================
-echo   Close App
+echo   GuanBi YingYong
 echo ============================================
 echo.
 
-echo Stopping Electron...
+echo TingZhi Electron...
 taskkill /f /im electron.exe >nul 2>&1
 if %errorlevel% equ 0 (
-    echo Electron stopped
+    echo Electron YiTingZhi
 ) else (
-    echo No Electron process found
+    echo WeiZhaoDao Electron JinCheng
 )
 
 echo.
-echo Stopping Node.js...
+echo TingZhi Node.js...
 taskkill /f /im node.exe >nul 2>&1
 if %errorlevel% equ 0 (
-    echo Node.js stopped
+    echo Node.js YiTingZhi
 ) else (
-    echo No Node.js process found
+    echo WeiZhaoDao Node.js JinCheng
 )
 
 echo.
 echo ============================================
-echo   All stopped
+echo   SuoYou JinCheng YiGuanBi
 echo ============================================
 
-timeout /t 2 >nul
+timeout /t 2 >nul 2>&1
+pause
 exit

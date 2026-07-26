@@ -21,6 +21,11 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
+  // 阻止拖放文件时的默认导航行为，确保拖拽上传正常工作
+  mainWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
   })

@@ -11,25 +11,23 @@
         <el-button type="primary" size="small" @click="handleExport">导出</el-button>
       </div>
     </div>
-    <el-auto-resizer>
-      <template #default="{ height, width }">
-        <el-table-v2
-          :columns="columns"
-          :data="filteredRows"
-          :width="width"
-          :height="Math.min(height, 600)"
-          :row-height="40"
-          :header-height="40"
-          fixed
-        />
-      </template>
-    </el-auto-resizer>
+    <div class="table-wrapper">
+      <el-table-v2
+        :columns="columns"
+        :data="filteredRows"
+        :width="tableWidth"
+        :height="500"
+        :row-height="40"
+        :header-height="40"
+        fixed
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, h } from 'vue'
-import { ElAutoResizer, ElTableV2 } from 'element-plus'
+import { computed, h, ref, onMounted } from 'vue'
+import { ElTableV2, ElButton } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { exportFile } from '../utils/excel.js'
 
@@ -40,6 +38,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:filterMode', 'delete-row'])
+
+const tableWidth = ref(1100)
+
+onMounted(() => {
+  tableWidth.value = document.querySelector('.result-area')?.clientWidth - 32 || 1100
+})
 
 const filterMode = computed({
   get: () => props.filterMode,
@@ -79,12 +83,12 @@ const columns = computed(() => {
     width: 80,
     align: 'center',
     cellRenderer: ({ rowData }) => {
-      return h('el-button', {
+      return h(ElButton, {
         type: 'danger',
         size: 'small',
         link: true,
         onClick: () => handleDelete(rowData.__rowIndex)
-      }, '删除')
+      }, () => '删除')
     }
   })
 
@@ -115,7 +119,7 @@ async function handleExport() {
       return clean
     })
 
-    exportFile(rows, headers, result.filePath, ext)
+    await exportFile(rows, headers, result.filePath, ext)
     ElMessage.success('导出成功')
   } catch (e) {
     ElMessage.error(e.message || '导出失败，请重试')

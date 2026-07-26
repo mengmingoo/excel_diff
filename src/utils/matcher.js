@@ -29,7 +29,7 @@ export function match(mainRows, crossRows, mainCol, crossCol) {
 
     if (matchedRows.length === 0) {
       // 无匹配：保留主表行，跨表字段为空
-      const row = {}
+      const row = { __unmatched__: true }
       for (const h of mainHeaders) {
         row[`主表_${h}`] = mainRow[h]
       }

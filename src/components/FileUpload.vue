@@ -31,12 +31,33 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, onMounted, onUnmounted } from 'vue'
 import { UploadFilled, CircleCheck, Loading } from '@element-plus/icons-vue'
-import { parseFile, validateFormat } from '../utils/excel.js'
+import { parseFile } from '../utils/excel.js'
 import { ElMessage } from 'element-plus'
 
 const emit = defineEmits(['main-loaded', 'cross-loaded'])
+
+// 在 Electron 中阻止拖放文件的默认行为（导航到文件），确保 el-upload 拖拽正常工作
+// 注意：只 preventDefault，不 stopPropagation，让事件能正常传播到 el-upload 组件
+function handleDragOver(e) {
+  e.preventDefault()
+}
+
+function handleDrop(e) {
+  e.preventDefault()
+  // 不阻止冒泡，让 el-upload 能正常接收 drop 事件
+}
+
+onMounted(() => {
+  document.addEventListener('dragover', handleDragOver)
+  document.addEventListener('drop', handleDrop)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('dragover', handleDragOver)
+  document.removeEventListener('drop', handleDrop)
+})
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 const PROGRESS_THRESHOLD = 5000 // 超过此行数显示进度
@@ -61,11 +82,9 @@ async function handleFile(file, type) {
     return
   }
 
-  // 格式校验
-  const filePath = rawFile.path
-  try {
-    validateFormat(filePath)
-  } catch (e) {
+  // 格式校验（使用文件名，rawFile.path 在拖拽时可能为空）
+  const fileName = rawFile.name
+  if (!/\.(xlsx|xls|csv)$/i.test(fileName)) {
     ElMessage.error('仅支持 .xlsx/.xls/.csv 格式')
     return
   }
@@ -73,11 +92,12 @@ async function handleFile(file, type) {
   // 解析文件
   item.loading = true
   item.progress = 0
-  item.fileName = rawFile.name
+  item.fileName = fileName
 
   try {
-    // 大文件分段读取以模拟进度提示
-    const result = await parseWithProgress(filePath, item)
+    // 优先使用真实路径（Electron），回退到 File 对象
+    const fileSource = rawFile.path || rawFile
+    const result = await parseWithProgress(fileSource, item)
     item.fileName = rawFile.name
     item.loading = false
 
@@ -90,7 +110,7 @@ async function handleFile(file, type) {
     emit(type === 'main' ? 'main-loaded' : 'cross-loaded', {
       headers: result.headers,
       rows: result.rows,
-      filePath: filePath
+      filePath: rawFile.path || rawFile.name
     })
   } catch (e) {
     ElMessage.error(e.message || '文件解析失败，请检查文件是否损坏')
@@ -101,7 +121,7 @@ async function handleFile(file, type) {
 
 async function parseWithProgress(filePath, item) {
   // 先快速解析获取行数
-  const result = parseFile(filePath)
+  const result = await parseFile(filePath)
 
   if (result.rows.length > PROGRESS_THRESHOLD) {
     // 大文件模拟分批进度

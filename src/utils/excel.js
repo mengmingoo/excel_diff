@@ -1,46 +1,71 @@
 import * as XLSX from 'xlsx'
-import fs from 'fs'
-import path from 'path'
 
-const ALLOWED_EXT = ['.xlsx', '.xls', '.csv']
+const ALLOWED_EXT = /\.(xlsx|xls|csv)$/i
 
 /**
- * 校验文件格式
+ * 获取 fs 模块，兼容 Electron 渲染进程和 Node.js 测试环境
+ * - Electron: window.require('fs') 绕过 Vite 的 browser-external stub
+ * - Node.js: eval('require')('fs') 绕过 Vite 的静态分析
+ */
+function getFs() {
+  if (typeof window !== 'undefined' && window.require) {
+    return window.require('fs')
+  }
+  return eval('require')('fs')
+}
+
+/**
+ * 校验文件格式（支持文件名或路径）
  */
 export function validateFormat(filePath) {
-  const ext = path.extname(filePath).toLowerCase()
-  if (!ALLOWED_EXT.includes(ext)) {
+  if (!ALLOWED_EXT.test(filePath)) {
     throw new Error('仅支持 .xlsx/.xls/.csv 格式')
   }
 }
 
 /**
- * 解析文件，返回 { headers, rows }
+ * 从 File 对象读取为 ArrayBuffer
  */
-export function parseFile(filePath) {
-  validateFormat(filePath)
-  const ext = path.extname(filePath).toLowerCase()
+function readFileAsBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(new Uint8Array(reader.result))
+    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.readAsArrayBuffer(file)
+  })
+}
 
+/**
+ * 解析文件，返回 { headers, rows }
+ * fileSource: 文件路径字符串（Electron）或 File 对象（浏览器/拖拽）
+ */
+export async function parseFile(fileSource) {
   let workbook
-  try {
-    if (ext === '.csv') {
-      const content = fs.readFileSync(filePath, 'utf-8')
-      workbook = XLSX.read(content, { type: 'string' })
-    } else {
-      // xlsx/xls 文件校验：真实 Office 文件应以 ZIP 头或 OLE 头开头
-      const buf = Buffer.alloc(4)
-      const fd = fs.openSync(filePath, 'r')
-      fs.readSync(fd, buf, 0, 4, 0)
-      fs.closeSync(fd)
-      const header = buf.toString('hex')
-      const validHeaders = ['504b0304', 'd0cf11e0']
-      if (!validHeaders.includes(header)) {
-        throw new Error('文件解析失败，请检查文件是否损坏')
+
+  if (typeof fileSource === 'string') {
+    // Electron 环境：文件路径
+    validateFormat(fileSource)
+    try {
+      const ext = fileSource.toLowerCase().split('.').pop()
+      if (ext === 'csv') {
+        const fs = getFs()
+        const content = fs.readFileSync(fileSource, 'utf-8')
+        workbook = XLSX.read(content, { type: 'string' })
+      } else {
+        workbook = XLSX.readFile(fileSource)
       }
-      workbook = XLSX.readFile(filePath)
+    } catch (e) {
+      throw new Error('文件解析失败，请检查文件是否损坏')
     }
-  } catch (e) {
-    throw new Error('文件解析失败，请检查文件是否损坏')
+  } else {
+    // 浏览器/拖拽环境：File 对象
+    validateFormat(fileSource.name)
+    try {
+      const data = await readFileAsBuffer(fileSource)
+      workbook = XLSX.read(data, { type: 'array' })
+    } catch (e) {
+      throw new Error('文件解析失败，请检查文件是否损坏')
+    }
   }
 
   if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
@@ -68,19 +93,24 @@ export function parseFile(filePath) {
 /**
  * 导出文件
  */
-export function exportFile(rows, headers, filePath, format) {
+export async function exportFile(rows, headers, filePath, format) {
   try {
     const ws = XLSX.utils.json_to_sheet(rows, { header: headers })
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
+    const fs = getFs()
+
     if (format === 'csv') {
       const csv = XLSX.utils.sheet_to_csv(ws)
-      fs.writeFileSync(filePath, csv, 'utf-8')
+      fs.writeFileSync(filePath, '\uFEFF' + csv, 'utf-8')
     } else {
-      XLSX.writeFile(wb, filePath)
+      // 使用 type: 'array' 而非 'buffer'，兼容 Electron 渲染进程
+      const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
+      fs.writeFileSync(filePath, Buffer.from(data))
     }
   } catch (e) {
+    console.error('导出失败:', e)
     throw new Error('导出失败，请重试')
   }
 }
