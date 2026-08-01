@@ -19,7 +19,9 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "app.config.json",
+      "assets/**/*"
     ],
     "win": {
       "target": "nsis"

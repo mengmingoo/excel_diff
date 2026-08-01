@@ -1,12 +1,75 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 let mainWindow = null
 
+// 读取应用配置
+function loadConfig() {
+  const configPath = path.join(__dirname, '../app.config.json')
+  try {
+    const raw = fs.readFileSync(configPath, 'utf-8')
+    return JSON.parse(raw)
+  } catch (e) {
+    return {
+      appName: '跨表匹配工具',
+      appVersion: '1.0.0',
+      developer: 'mengming',
+      icon: 'assets/icon.png'
+    }
+  }
+}
+
+const appConfig = loadConfig()
+
+// 解析图标路径
+function getIconPath() {
+  const iconPath = path.join(__dirname, '..', appConfig.icon || 'assets/icon.png')
+  if (fs.existsSync(iconPath)) {
+    return iconPath
+  }
+  return null
+}
+
+// 设置自定义菜单（仅保留"关于"）
+function setAppMenu() {
+  const template = [
+    {
+      label: '关于',
+      submenu: [
+        {
+          label: '关于软件',
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: '关于',
+              message: appConfig.appName,
+              detail: `版本：${appConfig.appVersion}\n开发者：${appConfig.developer}`,
+              buttons: ['确定']
+            })
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '退出',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
+          click: () => app.quit()
+        }
+      ]
+    }
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
+
 function createWindow() {
+  const iconPath = getIconPath()
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -31,7 +94,10 @@ function createWindow() {
   })
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  setAppMenu()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
