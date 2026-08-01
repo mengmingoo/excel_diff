@@ -9,7 +9,26 @@
 - 多条匹配全部带回，无匹配行保留但跨表字段为空
 - 结果筛选（全部/已匹配/未匹配）、删除、导出
 - 虚拟滚动支持 10 万+ 行数据流畅显示
+- 自定义表头行：列名不在第一行时可指定行号
 - 跨平台：Windows / macOS / Linux / 麒麟
+
+## 配置
+
+软件信息通过 `app.config.json` 集中管理，可自定义：
+
+```json
+{
+  "appName": "跨表匹配工具",
+  "appVersion": "1.0.0",
+  "developer": "mengming",
+  "icon": "assets/icon.png"
+}
+```
+
+- `appName`：软件名称
+- `appVersion`：软件版本
+- `developer`：开发者
+- `icon`：应用图标路径（可替换 `assets/icon.png` 自定义图标）
 
 ## 快速开始
 
