@@ -27,6 +27,17 @@
           <p class="upload-hint">支持 .xlsx / .xls / .csv</p>
         </div>
       </el-upload>
+      <div v-if="item.fileName" class="header-row-config">
+        <span class="config-label">表头行：</span>
+        <el-input-number
+          v-model="item.headerRow"
+          :min="1"
+          :max="item.totalRows"
+          size="small"
+          controls-position="right"
+          @change="(val) => onHeaderRowChange(item.type, val)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -64,8 +75,8 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 const PROGRESS_THRESHOLD = 5000 // 超过此行数显示进度
 
 const uploadItems = reactive([
-  { type: 'main', label: '主表', fileName: '', loading: false, progress: 0 },
-  { type: 'cross', label: '跨表', fileName: '', loading: false, progress: 0 }
+  { type: 'main', label: '主表', fileName: '', loading: false, progress: 0, headerRow: 1, totalRows: 0, fileSource: null },
+  { type: 'cross', label: '跨表', fileName: '', loading: false, progress: 0, headerRow: 1, totalRows: 0, fileSource: null }
 ])
 
 // 存储 el-upload 组件引用，用于清除内部文件列表
@@ -101,17 +112,19 @@ async function handleFile(file, type) {
   item.loading = true
   item.progress = 0
   item.fileName = fileName
+  item.headerRow = 1
+  item.fileSource = rawFile.path || rawFile
 
   try {
-    // 优先使用真实路径（Electron），回退到 File 对象
-    const fileSource = rawFile.path || rawFile
-    const result = await parseWithProgress(fileSource, item)
+    const result = await parseWithProgress(item.fileSource, item, item.headerRow)
     item.fileName = rawFile.name
+    item.totalRows = result.rows.length
     item.loading = false
 
     if (result.rows.length === 0) {
       ElMessage.warning('表格无数据，请重新选择文件')
       item.fileName = ''
+      item.fileSource = null
       return
     }
 
@@ -123,13 +136,14 @@ async function handleFile(file, type) {
   } catch (e) {
     ElMessage.error(e.message || '文件解析失败，请检查文件是否损坏')
     item.fileName = ''
+    item.fileSource = null
     item.loading = false
   }
 }
 
-async function parseWithProgress(filePath, item) {
+async function parseWithProgress(filePath, item, headerRow) {
   // 先快速解析获取行数
-  const result = await parseFile(filePath)
+  const result = await parseFile(filePath, headerRow)
 
   if (result.rows.length > PROGRESS_THRESHOLD) {
     // 大文件模拟分批进度
@@ -143,11 +157,32 @@ async function parseWithProgress(filePath, item) {
   return result
 }
 
+async function onHeaderRowChange(type, headerRow) {
+  const item = getItem(type)
+  if (!item.fileSource || !headerRow) return
+
+  try {
+    const result = await parseFile(item.fileSource, headerRow)
+    item.totalRows = result.rows.length
+
+    emit(type === 'main' ? 'main-loaded' : 'cross-loaded', {
+      headers: result.headers,
+      rows: result.rows,
+      filePath: typeof item.fileSource === 'string' ? item.fileSource : item.fileSource.name
+    })
+  } catch (e) {
+    ElMessage.error('表头行设置无效，请检查')
+  }
+}
+
 function clearFile(type) {
   const item = getItem(type)
   item.fileName = ''
   item.loading = false
   item.progress = 0
+  item.headerRow = 1
+  item.totalRows = 0
+  item.fileSource = null
   // 清除 el-upload 内部文件列表，否则 limit=1 会阻止重新上传
   if (uploadRefs[type]) {
     uploadRefs[type].clearFiles()
@@ -216,5 +251,18 @@ function clearFile(type) {
   align-items: center;
   gap: 8px;
   color: #67c23a;
+}
+
+.header-row-config {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.config-label {
+  font-size: 13px;
+  color: #606266;
 }
 </style>

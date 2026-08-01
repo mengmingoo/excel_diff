@@ -38,9 +38,11 @@ function readFileAsBuffer(file) {
 /**
  * 解析文件，返回 { headers, rows }
  * fileSource: 文件路径字符串（Electron）或 File 对象（浏览器/拖拽）
+ * headerRow: 表头所在行号（1-based），默认 1
  */
-export async function parseFile(fileSource) {
+export async function parseFile(fileSource, headerRow = 1) {
   let workbook
+  const headerIndex = headerRow - 1 // 转为 0-based
 
   if (typeof fileSource === 'string') {
     // Electron 环境：文件路径
@@ -74,15 +76,18 @@ export async function parseFile(fileSource) {
 
   const sheetName = workbook.SheetNames[0]
   const sheet = workbook.Sheets[sheetName]
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+  // 从指定行开始解析，该行作为表头
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', range: headerIndex })
 
   let headers = []
   if (rows.length > 0) {
     headers = Object.keys(rows[0])
-  } else if (sheet['!ref']) {
+  } else {
+    // 手动提取表头行
     const range = XLSX.utils.decode_range(sheet['!ref'])
     for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })]
+      const cell = sheet[XLSX.utils.encode_cell({ r: headerIndex, c: C })]
       headers.push(cell ? String(cell.v) : '')
     }
   }
