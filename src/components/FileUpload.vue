@@ -27,12 +27,12 @@
           <p class="upload-hint">支持 .xlsx / .xls / .csv</p>
         </div>
       </el-upload>
-      <div v-if="item.fileName" class="header-row-config">
+      <div v-if="item.fileName && item.totalRows >= 1" class="header-row-config">
         <span class="config-label">表头行：</span>
         <el-input-number
           v-model="item.headerRow"
           :min="1"
-          :max="item.totalRows"
+          :max="Math.max(item.totalRows, 1)"
           size="small"
           controls-position="right"
           @change="(val) => onHeaderRowChange(item.type, val)"

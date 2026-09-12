@@ -32,9 +32,30 @@
 
 ## 快速开始
 
-### 启动桌面应用（Electron）
+### Windows
 
 双击 `start.bat`，脚本会自动检查环境、安装依赖、构建前端并启动 Electron 应用窗口。
+双击 `stop.bat` 关闭应用，双击 `build.bat` 打包安装包到 `release/` 目录。
+
+### Linux（通用）
+
+```bash
+chmod +x start.sh stop.sh build.sh   # 首次使用赋予执行权限
+./start.sh    # 启动应用
+./stop.sh     # 停止应用
+./build.sh    # 打包安装包
+```
+
+### 麒麟 V10（ARM64）
+
+针对飞腾 / 鲲鹏等 ARM64 架构提供专用脚本（自动检测架构、配置国内镜像、禁用沙箱）：
+
+```bash
+chmod +x start-arm.sh stop-arm.sh build-arm.sh
+./start-arm.sh    # 启动应用
+./stop-arm.sh     # 停止应用
+./build-arm.sh    # 打包 ARM64 安装包
+```
 
 ### 启动网页版
 
@@ -44,14 +65,6 @@ npm run dev
 ```
 
 浏览器访问 `http://localhost:5173`，即可在网页中使用全部功能。
-
-### 关闭项目
-
-双击 `stop.bat`，自动终止 Electron 和 Node.js 进程。
-
-### 打包项目
-
-双击 `build.bat`，生成安装包到 `release/` 目录。
 
 ## 开发
 
@@ -84,7 +97,9 @@ npm run electron:build -- --mac
 
 输出：`release/跨表匹配工具-1.0.0.dmg`
 
-### Linux
+### Linux（通用）
+
+执行 `./build.sh`，或：
 
 ```bash
 npm run electron:build -- --linux
@@ -92,19 +107,32 @@ npm run electron:build -- --linux
 
 输出：`release/跨表匹配工具-1.0.0.AppImage` 和 `release/跨表匹配工具-1.0.0.deb`
 
-### 麒麟（Kylin）
+### 麒麟 V10（ARM64）
 
-麒麟系统基于 Linux，使用 Linux 打包命令即可：
+执行 `./build-arm.sh`，脚本会自动以 `--arm64` 目标架构打包并配置国内镜像源：
 
 ```bash
-npm run electron:build -- --linux
+./build-arm.sh
 ```
 
-如需指定架构（如飞腾 ARM64）：
+等价命令：
 
 ```bash
 npm run electron:build -- --linux --arm64
 ```
+
+## 注意事项
+
+1. **执行权限**：Linux / 麒麟下首次运行脚本前需执行 `chmod +x *.sh`；若以 `bash start.sh` 方式运行则无需执行权限。
+2. **麒麟运行依赖**：启动若报缺少动态库（如 `libgtk-3.so.0`），请先安装：
+   ```bash
+   sudo apt install libgtk-3-0 libnss3 libasound2
+   ```
+3. **麒麟沙箱**：麒麟国产化环境普遍存在 Electron sandbox 权限问题，`start-arm.sh` 已通过 `ELECTRON_DISABLE_SANDBOX=1` 自动禁用；手动启动可执行 `ELECTRON_DISABLE_SANDBOX=1 npx electron .`。
+4. **ARM 架构匹配**：若之前安装过 x64 版依赖，`start-arm.sh` 会检测并警告；此时删除 `node_modules` 后重新运行脚本，npm 会自动下载 arm64 版 Electron 二进制。
+5. **deb 打包依赖**：打 deb 包需要 fpm，electron-builder 会自动下载；若下载失败请先安装 `sudo apt install ruby ruby-dev`。
+6. **网页版缓存**：使用 `npm run dev` 调试时若页面显示旧功能，请强制刷新（Ctrl+Shift+R）或使用无痕窗口，避免浏览器缓存旧代码。
+7. **国内网络**：脚本已默认使用国内镜像源（`registry.npmmirror.com`、Electron 镜像等），确保依赖下载稳定。
 
 ## TODO
 
