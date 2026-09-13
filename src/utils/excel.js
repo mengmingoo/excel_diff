@@ -119,3 +119,30 @@ export async function exportFile(rows, headers, filePath, format) {
     throw new Error('导出失败，请重试')
   }
 }
+
+/**
+ * 浏览器环境导出：直接触发浏览器下载（无 window.require，即 npm run dev / 网页版）
+ */
+export function exportToBrowser(rows, headers, format, filename) {
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers })
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+  let blob
+  if (format === 'csv') {
+    const csv = XLSX.utils.sheet_to_csv(ws)
+    blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  } else {
+    const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
+    blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  }
+
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}

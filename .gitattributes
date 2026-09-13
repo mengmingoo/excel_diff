@@ -1,0 +1,2 @@
+# 强制 shell 脚本使用 LF 行尾，确保 Linux/麒麟下可正常执行
+*.sh text eol=lf

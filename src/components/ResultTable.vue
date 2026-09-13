@@ -29,7 +29,7 @@
 import { computed, h, ref, onMounted } from 'vue'
 import { ElTableV2, ElButton } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { exportFile } from '../utils/excel.js'
+import { exportFile, exportToBrowser } from '../utils/excel.js'
 
 const props = defineProps({
   resultRows: { type: Array, default: () => [] },
@@ -101,15 +101,7 @@ function handleDelete(index) {
 
 async function handleExport() {
   try {
-    const { ipcRenderer } = window.require('electron')
     const ext = props.mainFormat === 'csv' ? 'csv' : 'xlsx'
-    const filterName = ext === 'csv' ? 'CSV Files' : 'Excel Files'
-    const result = await ipcRenderer.invoke('show-save-dialog', {
-      filters: [{ name: filterName, extensions: [ext] }]
-    })
-
-    if (result.canceled || !result.filePath) return
-
     const headers = Object.keys(props.resultRows[0]).filter(h => h !== UNMATCHED_MARKER)
     const rows = filteredRows.value.map(r => {
       const clean = {}
@@ -119,7 +111,23 @@ async function handleExport() {
       return clean
     })
 
-    await exportFile(rows, headers, result.filePath, ext)
+    if (typeof window !== 'undefined' && window.require) {
+      // Electron 环境：弹出保存对话框，写入文件系统
+      const { ipcRenderer } = window.require('electron')
+      const filterName = ext === 'csv' ? 'CSV Files' : 'Excel Files'
+      const result = await ipcRenderer.invoke('show-save-dialog', {
+        filters: [{ name: filterName, extensions: [ext] }]
+      })
+      if (result.canceled || !result.filePath) return
+
+      await exportFile(rows, headers, result.filePath, ext)
+    } else {
+      // 浏览器环境：直接触发下载
+      const now = new Date()
+      const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+      exportToBrowser(rows, headers, ext, `匹配结果_${stamp}.${ext}`)
+    }
+
     ElMessage.success('导出成功')
   } catch (e) {
     ElMessage.error(e.message || '导出失败，请重试')
